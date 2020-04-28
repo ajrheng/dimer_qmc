@@ -40,8 +40,8 @@ class mc_sse_dimer:
     vert = np.zeros(l,dtype=np.int64)
     link = np.zeros(4*l,dtype=np.int64)
     num_op = 0
-    t_loop_len = 5
-    d_loop_len = 5
+    t_loop_len = 50
+    d_loop_len = 50
     num_opers_t = 0
     num_opers_d = 0
     num_loops_t = 0
@@ -52,6 +52,7 @@ class mc_sse_dimer:
     #observables variables
     num_op_for_energy = 0
     max_wgt = 0
+    magnetization = 0
 
     tp_wgt = np.zeros(4,dtype=np.float64)
     tm_wgt = np.zeros(4,dtype=np.float64)
@@ -60,6 +61,7 @@ class mc_sse_dimer:
     dm_wgt = np.zeros(4,dtype=np.float64)
     dz_wgt = np.zeros(4,dtype=np.float64)
     t2_wgt = np.zeros(4,dtype=np.float64)
+    h_wgt = np.zeros(4,dtype=np.float64)
 
     act_tp = np.zeros(4,dtype=np.int64); act_tp[:] = -1
     act_tm = np.zeros(4,dtype=np.int64); act_tm[:] = -1
@@ -73,12 +75,13 @@ class mc_sse_dimer:
     t_passed = False
     d_passed = False
 
-    def __init__(self,j1,j2,beta,L,equil_steps = 50000, mc_steps = 10000, num_runs = 10):
+    def __init__(self,j1,j2,h,beta,L,equil_steps = 50000, mc_steps = 10000, num_runs = 10):
 
         # Hamiltonian parameters
         self.j1 = j1
         self.j2 = j2
         self.beta = beta
+        self.h = h #magnetic field
 
         #MC parameters
         self.equil_steps = equil_steps
@@ -102,8 +105,8 @@ class mc_sse_dimer:
         random.seed(int(time.time())) #set random seed when constructor called
 
         with open('log.txt','a') as file:
-            file.write("Parameters for this run: J = {0}, J2 = {1}, beta = {2}, L = {3}\n"\
-                .format(self.j1, self.j2, self.beta, self.nx)) 
+            file.write("Parameters for this run: J = {0}, J2 = {1}, h = {2}, beta = {3}, L = {4}\n"\
+                .format(self.j1, self.j2, self.h, self.beta, self.nx)) 
 
     def init_state(self):
         for i in range(len(self.state)):
@@ -144,7 +147,7 @@ class mc_sse_dimer:
             self.iq_to_ns[1,iq] = ns1
 
     def init_matrix_ele(self):
-
+        
         self.dz_wgt[0] = 1
         self.dp_wgt[0] = np.sqrt(2)
         self.dm_wgt[0] = np.sqrt(2)
@@ -153,6 +156,7 @@ class mc_sse_dimer:
         self.tp_wgt[1] = np.sqrt(2)
         self.dp_wgt[1] = np.sqrt(2)
         self.t2_wgt[1] = 2
+        self.h_wgt[1] = 1
 
         self.tp_wgt[2] = np.sqrt(2)
         self.tm_wgt[2] = np.sqrt(2)
@@ -163,7 +167,8 @@ class mc_sse_dimer:
         self.tm_wgt[3] = np.sqrt(2)
         self.dm_wgt[3] = np.sqrt(2)
         self.t2_wgt[3] = 2
-
+        self.h_wgt[3] = -1
+        #==============================================
         self.act_dz[0] = 2
         self.act_dp[0] = 3
         self.act_dm[0] = 1
@@ -189,10 +194,12 @@ class mc_sse_dimer:
             s1 = self.iq_to_ns[0,iq]
             s2 = self.iq_to_ns[1,iq]
             self.wgt[iq] = 0.5 * (self.j1 + self.j2) * self.tz_wgt[s1] * self.tz_wgt[s2] 
+            self.wgt[iq] += self.h * (self.h_wgt[s1] + self.h_wgt[s2])/self.Z
             self.wgt[iq] += ( (0.5 * self.t2_wgt[s1] - 3/4) + (0.5*self.t2_wgt[s2] - 3/4) )/self.Z    
             if self.wgt[iq] > self.max_wgt:
                 self.max_wgt = self.wgt[iq]
 
+        #print(self.max_wgt)
         #max_wgt += 1
         # self.wgt = np.add(self.wgt,0.5*(self.j1+self.j2))
         # self.awgt[:] = self.wgt[:]
@@ -553,6 +560,14 @@ class mc_sse_dimer:
     def measure_energy(self):
 
         self.num_op_for_energy += self.num_op
+    
+    def measure_magnetization(self):
+
+        for i in range(len(self.state)):
+            if self.state[i] == 1:
+                self.magnetization -= 1
+            elif self.state[i] == 3:
+                self.magnetization += 1
 
     def linked_list(self):
 
@@ -826,6 +841,12 @@ class mc_sse_dimer:
             self.d_loop_len = int((self.d_loop_len+nl)/2)
         except ZeroDivisionError:
             pass
+    
+        if self.t_loop_len > 100:
+            self.t_loop_len = 100
+        
+        if self.d_loop_len > 100:
+            self.d_loop_len = 100
 
         with open('log.txt','a') as file:
             file.write("new t and d loop lens are {0} and {1}\n".format(self.t_loop_len,self.d_loop_len))
@@ -840,6 +861,12 @@ class mc_sse_dimer:
         file.write(str(energy)+'\n')
         file.close()
 
+        mag = self.magnetization/(self.mc_steps*self.nn) #magnetization per dimer
+
+        file = open('magnetization.txt','a')
+        file.write(str(mag)+'\n')
+        file.close()
+
     def set_zero(self):
 
         self.num_opers_t = 0
@@ -847,6 +874,7 @@ class mc_sse_dimer:
         self.num_opers_d = 0
         self.num_loops_d = 0
         self.num_op_for_energy = 0
+        self.magnetization = 0
 
     def one_mc_step(self):
 
@@ -869,9 +897,9 @@ class mc_sse_dimer:
         beta_temp = self.beta
         self.beta = 1.
 
-        for i in range(1,int(self.mc_steps)+1):
+        for i in range(1,int(self.equil_steps)+1):
 
-            if i<=0.8*self.mc_steps and i%((0.8*self.mc_steps)//(beta_temp-1)) == 0:
+            if i<=0.8*self.equil_steps and i%((0.8*self.equil_steps)//(beta_temp-1)) == 0:
                 #simulated annealing, slowly decrease temperature to desired temperature
                 self.beta += 1
                 with open('log.txt','a') as file:
@@ -888,10 +916,10 @@ class mc_sse_dimer:
             #     with open('log.txt','a') as file:
             #         file.write('Running equilibration step {0}\n'.format(i))
 
-            if i%(self.mc_steps//20) == 0: #call it 20 times
-            #     self.write_conf(0)
-                self.adjust_loop_len()
-                self.set_zero()
+            # if i%(self.mc_steps//20) == 0: #call it 20 times
+            # #     self.write_conf(0)
+            #     self.adjust_loop_len()
+            #     self.set_zero()
 
         with open('log.txt','a') as file:
             file.write('Completed equilibration. L = {0}, t loop len = {1}, d loop len = {2}\n'.format(self.l,self.t_loop_len, self.d_loop_len))
@@ -918,6 +946,7 @@ class mc_sse_dimer:
             for _ in range(self.mc_steps):
                 self.one_mc_step()
                 self.measure_energy()
+                self.measure_magnetization()
 
             self.write_observables()
             self.write_conf(i)
