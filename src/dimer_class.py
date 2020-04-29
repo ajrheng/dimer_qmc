@@ -1,3 +1,7 @@
+"""
+Class for dimer basis QMC on the Shastry-Sutherland lattice.
+"""
+
 import numpy as np
 import random
 import time
