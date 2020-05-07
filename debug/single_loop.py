@@ -31,8 +31,7 @@ class mc_sse_dimer:
     vx_num_aft_op = np.zeros((OP_NUM,MAX_BOND_NUM),dtype=np.int64) #vxcode
     vx_leg = np.zeros((4,MAX_VX_NUM),dtype=np.int64) 
     vx_new = np.zeros((4,4,4,MAX_VX_NUM),dtype=np.int64)
-    t_worm_prob = np.zeros((4,4,4,MAX_VX_NUM),dtype=np.float64)
-    d_worm_prob = np.zeros((4,4,4,MAX_VX_NUM),dtype=np.float64)
+    worm_prob = np.zeros((4,4,4,MAX_VX_NUM),dtype=np.float64)
     vx_matrix_ele = np.zeros(MAX_VX_NUM, dtype=np.float64)
 
     l = 20 #initial length of opstring and related arrays
@@ -40,12 +39,9 @@ class mc_sse_dimer:
     vert = np.zeros(l,dtype=np.int64)
     link = np.zeros(4*l,dtype=np.int64)
     num_op = 0
-    t_loop_len = 100
-    d_loop_len = 100
-    num_opers_t = 0
-    num_opers_d = 0
-    num_loops_t = 0
-    num_loops_d = 0
+    loop_len = 100
+    num_opers = 0
+    num_loops = 0
     ns_to_iq = np.zeros((4,4),dtype=np.int64)
     iq_to_ns = np.zeros((2,MAX_BOND_NUM),dtype=np.int64)
 
@@ -72,8 +68,7 @@ class mc_sse_dimer:
     act_t2 = np.zeros(4,dtype=np.int64); act_t2[:] = -1
 
     nvx = 0 #counter for num of vertices
-    t_passed = False
-    d_passed = False
+    passed = False
 
     def __init__(self,j1,j2,h,beta,L,equil_steps = 50000, mc_steps = 10000, num_runs = 10):
 
@@ -340,9 +335,11 @@ class mc_sse_dimer:
                 self.vx_matrix_ele[iiv] = 0.5*abs(self.j1-self.j2)
 
     def initvrtx(self):
+
+        tracking_list = []
+
         ns = np.zeros(4,dtype=np.int64)
-        self.t_worm_prob[:,:,:,:] = 0
-        self.d_worm_prob[:,:,:,:] = 0
+        self.worm_prob[:,:,:,:] = 0
         self.vx_new[:,:,:,:] = 0
 
         for i in range(1,self.nvx+1):
@@ -352,7 +349,7 @@ class mc_sse_dimer:
 
             for ic in range(4):
                 instate = ns[ic]
-                #====================== START OF T+ T- WORM============================#
+                #====================== T+ T- TERMS============================#
                 if (self.act_tp[instate]!=-1):
                     ns1 = np.copy(ns)
                     ns1[ic] = self.act_tp[instate]
@@ -367,7 +364,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.t_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_tm[outstate]!=-1):
                             ns2[oc] = self.act_tm[outstate]
@@ -375,7 +376,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.t_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]                        
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]             
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))        
 
                 if (self.act_tm[instate]!=-1):
                     ns1 = np.copy(ns)
@@ -391,7 +396,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.t_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_tm[outstate]!=-1):
                             ns2[oc] = self.act_tm[outstate]
@@ -399,7 +408,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.t_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                 #====================== START OF D+ D- Dz WORM============================#
                 if (self.act_dp[instate]!=-1):
@@ -416,7 +429,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_dm[outstate]!=-1):
                             ns2[oc] = self.act_dm[outstate]
@@ -424,7 +441,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_dz[outstate]!=-1):
                             ns2[oc] = self.act_dz[outstate]
@@ -432,7 +453,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                 if (self.act_dm[instate]!=-1):
                     ns1 = np.copy(ns)
@@ -448,7 +473,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_dm[outstate]!=-1):
                             ns2[oc] = self.act_dm[outstate]
@@ -456,7 +485,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_dz[outstate]!=-1):
                             ns2[oc] = self.act_dz[outstate]
@@ -464,8 +497,11 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
-
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                 if (self.act_dz[instate]!=-1):
                     ns1 = np.copy(ns)
@@ -481,15 +517,23 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
-
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
+                                    
                         if (self.act_dm[outstate]!=-1):
                             ns2[oc] = self.act_dm[outstate]
                             iiv = get_num_from_ns(ns2)
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]   
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
 
                         if (self.act_dz[outstate]!=-1):
                             ns2[oc] = self.act_dz[outstate]
@@ -497,27 +541,28 @@ class mc_sse_dimer:
                             if (self.vx_num_from_int[iiv]!=-1):
                                 vertex_num = self.vx_num_from_int[iiv]
                                 self.vx_new[ic,oc,ns1[ic],i] = vertex_num
-                                self.d_worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                self.worm_prob[ic,oc,ns1[ic],i] = self.vx_matrix_ele[iiv]
+                                if (ic,oc,ns1[ic],i) in tracking_list:
+                                    print((ic,oc,ns1[ic],i), " already in the tracking list!")
+                                else:
+                                    tracking_list.append((ic,oc,ns1[ic],i))
+
+        #print(tracking_list)
 
         for i in range(1,self.nvx+1):
             for ic in range(4):
                 for instate in range(4):
                     for oc in range(1,4):
-                        self.t_worm_prob[ic,oc,instate,i] = self.t_worm_prob[ic,oc,instate,i] + self.t_worm_prob[ic,oc-1,instate,i]
-                        self.d_worm_prob[ic,oc,instate,i] = self.d_worm_prob[ic,oc,instate,i] + self.d_worm_prob[ic,oc-1,instate,i]
+                        self.worm_prob[ic,oc,instate,i] = self.worm_prob[ic,oc,instate,i] + self.worm_prob[ic,oc-1,instate,i]
 
         for i in range(1,self.nvx+1):
             for ic in range(4):
                 for instate in range(4):
                     for oc in range(4):
-                        if (self.t_worm_prob[ic,3,instate,i]!= 0):
-                            self.t_worm_prob[ic,oc,instate,i] /= self.t_worm_prob[ic,3,instate,i]
-                        if (self.d_worm_prob[ic,3,instate,i]!= 0):
-                            self.d_worm_prob[ic,oc,instate,i] /= self.d_worm_prob[ic,3,instate,i]
-                        if self.t_worm_prob[ic,oc,instate,i] < 1e-6:
-                            self.t_worm_prob[ic,oc,instate,i] = -1
-                        if self.d_worm_prob[ic,oc,instate,i] < 1e-6:
-                            self.d_worm_prob[ic,oc,instate,i] = -1
+                        if (self.worm_prob[ic,3,instate,i]!= 0):
+                            self.worm_prob[ic,oc,instate,i] /= self.worm_prob[ic,3,instate,i]
+                        if self.worm_prob[ic,oc,instate,i] < 1e-6:
+                            self.worm_prob[ic,oc,instate,i] = -1
 
     def diagonal_update(self):
         
@@ -622,12 +667,12 @@ class mc_sse_dimer:
         # for i in range(len(self.link)):
         #     print("p: {0}, link[p]: {1}, vert num: {2}".format(i,self.link[i],self.vert[i//4]))
 
-    def t_loop_update(self):
+    def loop_update(self):
 
-        ml = 100*self.l
+        ml = 50*self.l
         vert_copy = np.copy(self.vert)
 
-        for _ in range(self.t_loop_len):
+        for _ in range(self.loop_len):
             nv = 0
             vert_num0 = -1
             init_state = -1
@@ -648,7 +693,7 @@ class mc_sse_dimer:
             bef_init_state = self.vx_leg[in_leg, vx]
 
             p1 = init_p
-            self.t_passed = False
+            self.passed = False
         
             for i in range(ml):
                 vp = p1//4
@@ -658,13 +703,15 @@ class mc_sse_dimer:
 
                 if i==0:
                     if init_state == 0:
-                        break
-                    elif init_state == 2:
-                        instate_aft_flip = random.choice([self.act_tp[init_state], self.act_tm[init_state]])
+                        instate_aft_flip = random.choice([self.act_dz[init_state],self.act_dp[init_state],\
+                            self.act_dm[init_state]])
                     elif init_state == 1:
-                        instate_aft_flip = self.act_tp[init_state]
+                        instate_aft_flip = random.choice([self.act_tp[init_state],self.act_dp[init_state]])
+                    elif init_state == 2:
+                        instate_aft_flip = random.choice([self.act_tp[init_state], self.act_tm[init_state],\
+                            self.act_dz[init_state]])
                     else:
-                        instate_aft_flip = self.act_tm[init_state]
+                        instate_aft_flip = random.choice([self.act_tm[init_state],self.act_dm[init_state]])
                 else:
                     instate_aft_flip = outstate_aft_flip
 
@@ -676,7 +723,7 @@ class mc_sse_dimer:
                 r = random.random()
                 for out_leg in range(4):
                     #print(self.t_worm_prob[in_leg, out_leg, instate_aft_flip, vx])
-                    if r <= self.t_worm_prob[in_leg, out_leg, instate_aft_flip, vx]:
+                    if r <= self.worm_prob[in_leg, out_leg, instate_aft_flip, vx]:
                         new_vx = self.vx_new[in_leg, out_leg, instate_aft_flip, vx]
                         outstate_aft_flip = self.vx_leg[out_leg, new_vx]
                         self.vert[vp] = new_vx
@@ -695,97 +742,16 @@ class mc_sse_dimer:
                 
                 if (p1 == init_p and init_state == bef_init_state) or \
                     (p1 == bef_init_p and init_state == bef_init_state):
-                    self.t_passed = True
+                    self.passed = True
                     break
                 p1 = self.link[p1]
 
-            self.num_opers_t += nv
-            if self.t_passed is False:
+            self.num_opers += nv
+            if self.passed is False:
                 self.vert = np.copy(vert_copy) #revert back to old vert if didnt complete loop
                 return 
 
-        self.num_loops_t += self.t_loop_len
-
-    def d_loop_update(self):
-
-        ml = 100*self.l
-        vert_copy = np.copy(self.vert)
-
-        for _ in range(self.d_loop_len):
-            nv = 0
-            vert_num0 = -1
-            init_state = -1
-
-            while vert_num0 == -1 or init_state == -1:
-                init_p = random.randrange(0,4*self.num_op)
-                vp0 = init_p//4
-                vert_num0 = self.vert[vp0]
-                in_leg0 = init_p%4
-                init_state = self.vx_leg[in_leg0, vert_num0]
-
-            bef_init_p = self.link[init_p]
-            vx = self.vert[bef_init_p//4]
-            in_leg = bef_init_p%4
-            bef_init_state = self.vx_leg[in_leg, vx]
-
-            p1 = init_p
-            self.d_passed = False
-
-            for i in range(ml):
-                vp = p1//4
-                vx = self.vert[vp]
-                in_leg = p1%4
-                in_state = self.vx_leg[in_leg, vx]
-
-                if i==0:
-                    if init_state == 0:
-                        instate_aft_flip = random.choice([self.act_dz[init_state],self.act_dp[init_state],\
-                            self.act_dm[init_state]])
-                    elif init_state == 1:
-                        instate_aft_flip = self.act_dp[init_state]
-                    elif init_state == 2:
-                        instate_aft_flip = self.act_dz[init_state]
-                    else:
-                        instate_aft_flip = self.act_dm[init_state]
-                else:
-                    instate_aft_flip = outstate_aft_flip
-
-                if p1 == init_p:
-                    init_state = instate_aft_flip
-                elif p1 == bef_init_p:
-                    bef_init_state = instate_aft_flip
-
-                r = random.random()
-                for out_leg in range(4):
-                    if r <= self.d_worm_prob[in_leg, out_leg, instate_aft_flip, vx]:
-                        new_vx = self.vx_new[in_leg, out_leg, instate_aft_flip, vx]
-                        outstate_aft_flip = self.vx_leg[out_leg, new_vx]
-                        self.vert[vp] = new_vx
-                        break
-                    if out_leg == 3:
-                        with open('error.txt','a') as file:
-                            file.write("didn't find a suitable outleg for d worm!\n") #should have reached break statement previously
-                    
-                p1 = 4*vp + out_leg
-                nv += 1
-
-                if p1 == init_p:
-                    init_state = outstate_aft_flip
-                elif p1 == bef_init_p:
-                    bef_init_state = outstate_aft_flip
-                
-                if (p1 == init_p and init_state == bef_init_state) or \
-                    (p1 == bef_init_p and init_state == bef_init_state):
-                    self.d_passed = True
-                    break
-                p1 = self.link[p1]
-
-            self.num_opers_d += nv
-            if self.d_passed is False:
-                self.vert = np.copy(vert_copy)
-                return 
-
-        self.num_loops_d += self.d_loop_len
+        self.num_loops += self.loop_len
 
     def update_opstring(self):
 
@@ -829,29 +795,18 @@ class mc_sse_dimer:
     def adjust_loop_len(self):
 
         try:
-            avg_op_per_loop_t = self.num_loops_t/self.num_opers_t
-            nl = 1+int(2*self.l/avg_op_per_loop_t)
+            avg_op_per_loop = self.num_loops/self.num_opers
+            nl = 1+int(2*self.l/avg_op_per_loop)
             #nl = 1+int(self.l/avg_op_per_loop_t)
-            self.t_loop_len = int((self.t_loop_len+nl)/2)
+            self.loop_len = int((self.loop_len+nl)/2)
         except ZeroDivisionError:
             pass
-
-        try:
-            avg_op_per_loop_d = self.num_loops_d/self.num_opers_d
-            nl = 1+int(2*self.l/avg_op_per_loop_d)
-            #nl = 1+int(self.l/avg_op_per_loop_d)
-            self.d_loop_len = int((self.d_loop_len+nl)/2)
-        except ZeroDivisionError:
-            pass
-    
-        if self.t_loop_len > 300:
-            self.t_loop_len = 300
         
-        if self.d_loop_len > 300:
-            self.d_loop_len = 300
+        if self.loop_len > 300:
+            self.loop_len = 300
 
         with open('log.txt','a') as file:
-            file.write("new t and d loop lens are {0} and {1}\n".format(self.t_loop_len,self.d_loop_len))
+            file.write("new loop len is {0}\n".format(self.loop_len))
 
     def write_observables(self):
 
@@ -880,10 +835,8 @@ class mc_sse_dimer:
 
     def set_zero(self):
 
-        self.num_opers_t = 0
-        self.num_loops_t = 0
-        self.num_opers_d = 0
-        self.num_loops_d = 0
+        self.num_opers = 0
+        self.num_loops = 0
         self.num_op_for_energy = 0
         self.num_op_for_sp_heat = 0
         self.magnetization = 0
@@ -895,10 +848,9 @@ class mc_sse_dimer:
 
         self.diagonal_update()
         self.linked_list()
-        self.t_loop_update()
-        self.d_loop_update()
+        self.loop_update()
 
-        if self.t_passed is True or self.d_passed is True:
+        if self.passed is True:
             self.update_opstring() #if either t or d, or both passed, then update opstring
 
 
@@ -941,7 +893,7 @@ class mc_sse_dimer:
             #     self.set_zero()
 
         with open('log.txt','a') as file:
-            file.write('Completed equilibration. L = {0}, t loop len = {1}, d loop len = {2}\n'.format(self.l,self.t_loop_len, self.d_loop_len))
+            file.write('Completed equilibration. L = {0}, loop len = {1}\n'.format(self.l,self.loop_len))
 
     def write_conf(self,i):
     
