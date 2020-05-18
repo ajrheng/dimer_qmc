@@ -193,7 +193,7 @@ class mc_sse_dimer:
                 self.max_wgt = self.wgt[iq]
 
         #print(self.max_wgt)
-        #max_wgt += 1
+        #self.max_wgt += 1.
         # self.wgt = np.add(self.wgt,0.5*(self.j1+self.j2))
         # self.awgt[:] = self.wgt[:]
 
@@ -251,7 +251,8 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = 0.5*(self.j1+self.j2)
+                self.vx_matrix_ele[iiv] = abs(0.5 * (self.j1 + self.j2) 
+                                        * 0.5 * self.tp_wgt[ns[0]] * self.tm_wgt[ns[1]]) #coeff: 1/2(j1+j2) * 1/2T+T-
 
             if (self.act_tm[ns[0]] != -1 and self.act_tp[ns[1]]!= -1):
                 #T- T+ 
@@ -270,7 +271,8 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = 0.5*(self.j1+self.j2)
+                self.vx_matrix_ele[iiv] = abs(0.5 * (self.j1 + self.j2)
+                                        * 0.5 * self.tm_wgt[ns[0]] * self.tp_wgt[ns[1]])
 
         for iq in range(self.MAX_BOND_NUM):
             ns[:] = 0
@@ -294,7 +296,8 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = 0.5*abs(self.j1-self.j2)
+                self.vx_matrix_ele[iiv] = abs(0.5 * (self.j1 - self.j2)
+                                        * self.tz_wgt[ns[0]] * self.dz_wgt[ns[1]])
 
             if (self.act_tp[ns[0]] != -1 and self.act_dm[ns[1]]!= -1):
                 #T+ D-
@@ -313,7 +316,8 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = 0.5*abs(self.j1-self.j2)
+                self.vx_matrix_ele[iiv] = abs(0.5 * (self.j1 - self.j2) 
+                                        * 0.5 * self.tp_wgt[ns[0]] * self.dm_wgt[ns[1]])
 
             if (self.act_tm[ns[0]] != -1 and self.act_dp[ns[1]]!= -1):
                 #T- D+
@@ -332,7 +336,8 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = 0.5*abs(self.j1-self.j2)
+                self.vx_matrix_ele[iiv] = abs(0.5 * (self.j1 - self.j2)
+                                        * 0.5 * self.tm_wgt[ns[0]] * self.dp_wgt[ns[1]])
 
     def initvrtx(self):
 

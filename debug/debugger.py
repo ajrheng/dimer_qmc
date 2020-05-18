@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0,'/Users/Alvin/Desktop/dimer_qmc/src')
 from single_loop import *
 
 if __name__ == "__main__":
