@@ -49,9 +49,9 @@ class mc_sse_dimer:
     #observables variables
     num_op_for_energy = 0
     max_wgt = 0
-    magnetization = 0.
+    magnetization = 0
     num_op_for_sp_heat = 0
-    avg_sign = 0.
+    avg_sign = 0
 
     tp_wgt = np.zeros(4,dtype=np.float64)
     tm_wgt = np.zeros(4,dtype=np.float64)
@@ -195,7 +195,7 @@ class mc_sse_dimer:
                 self.max_wgt = self.wgt[iq]
 
         #print(self.max_wgt)
-        #self.max_wgt += 1.
+        self.max_wgt += 1.
         # self.wgt = np.add(self.wgt,0.5*(self.j1+self.j2))
         # self.awgt[:] = self.wgt[:]
 
@@ -229,7 +229,7 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                self.vx_matrix_ele[iiv] = self.awgt[iq] 
+                self.vx_matrix_ele[iiv] = self.awgt[iq]
                 self.sign[opnum,ns[0],ns[1]] = +1 #diagonals have been shifted to be positive definite
 
         for iq in range(self.MAX_BOND_NUM):
@@ -303,7 +303,7 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                matrix_ele = (0.5 * (self.j1 - self.j2)
+                matrix_ele = -(0.5 * (self.j1 - self.j2)
                             * self.tz_wgt[ns[0]] * self.dz_wgt[ns[1]])
                 self.sign[opnum,ns[0],ns[1]] = +1 if matrix_ele > 0 else -1
                 self.vx_matrix_ele[iiv] = abs(matrix_ele)
@@ -325,7 +325,7 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                matrix_ele = (0.5 * (self.j1 - self.j2) 
+                matrix_ele = -(0.5 * (self.j1 - self.j2) 
                             * 0.5 * self.tp_wgt[ns[0]] * self.dm_wgt[ns[1]])
                 self.sign[opnum,ns[0],ns[1]] = +1 if matrix_ele > 0 else -1
                 self.vx_matrix_ele[iiv] = abs(matrix_ele)
@@ -347,7 +347,7 @@ class mc_sse_dimer:
                 self.vx_num_aft_op[opnum,iq] = self.nvx
                 for i in range(4):
                     self.vx_leg[i,self.nvx] = ns[i]
-                matrix_ele = (0.5 * (self.j1 - self.j2)
+                matrix_ele = -(0.5 * (self.j1 - self.j2)
                             * 0.5 * self.tm_wgt[ns[0]] * self.dp_wgt[ns[1]])
                 self.sign[opnum,ns[0],ns[1]] = +1 if matrix_ele > 0 else -1
                 self.vx_matrix_ele[iiv] = abs(matrix_ele)
@@ -608,6 +608,11 @@ class mc_sse_dimer:
                     self.opstring[i] = 0
                     self.num_op -= 1
 
+                #doesnt matter if the diagonal is removed in this step, you are measuring
+                #the diagonals in the opstring resulting from the previous loop update
+                #minus comes from the - in e^(-BH) when you taylor expand
+                sign_of_opstring *= -self.sign[0,ns0,ns1] #diagonal has opnum = 0
+
             else:
                 b = ii//6
                 o = ii%6
@@ -617,7 +622,7 @@ class mc_sse_dimer:
                 jq = self.op[o,iq]
                 self.state[self.bond[0,b]] = self.iq_to_ns[0,jq]
                 self.state[self.bond[1,b]] = self.iq_to_ns[1,jq]
-                sign_of_opstring *= - self.sign[0,ns0,ns1] #minus comes -ve from e^(-BH)
+                sign_of_opstring *= -self.sign[o,ns0,ns1]
 
         # if sign_of_opstring < 0:
         #     print('sign_of_opstring is negative')
@@ -868,8 +873,8 @@ class mc_sse_dimer:
         self.num_loops = 0
         self.num_op_for_energy = 0
         self.num_op_for_sp_heat = 0
-        self.magnetization = 0.
-        self.avg_sign = 0.
+        self.magnetization = 0
+        self.avg_sign = 0
 
     def one_mc_step(self):
 
